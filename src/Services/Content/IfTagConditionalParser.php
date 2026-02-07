@@ -1,5 +1,5 @@
 <?php
-namespace Sendportal\Core\Services\Content;
+namespace Sendportal\Base\Services\Content\IfTagConditionalParser;
 
 /**
  * IfTagConditionalParser
@@ -77,4 +77,5 @@ final class IfTagConditionalParser
 		return $content;
 	}
 }
+
 ?>
