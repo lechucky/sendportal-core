@@ -1,6 +1,6 @@
 <?php
 declare(strict_types=1);
-namespace Sendportal\Base\Services\Content\IfTagConditionalParser;
+namespace Sendportal\Base\Services\Content;
 
 /**
  * IfTagConditionalParser
@@ -80,4 +80,5 @@ final class IfTagConditionalParser
 }
 
 ?>
+
 
