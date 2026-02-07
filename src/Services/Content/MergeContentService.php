@@ -11,6 +11,8 @@ use Sendportal\Base\Repositories\Campaigns\CampaignTenantRepositoryInterface;
 use Sendportal\Base\Traits\NormalizeTags;
 use Sendportal\Pro\Repositories\AutomationScheduleRepository;
 use TijsVerkoyen\CssToInlineStyles\CssToInlineStyles;
+//use Sendportal\Base\Services\Content\IfTagConditionalParser; //addon for conditional blocs using tags
+
 
 class MergeContentService
 {
@@ -21,13 +23,18 @@ class MergeContentService
 
     /** @var CssToInlineStyles */
     protected $cssProcessor;
+    
+    /** @var IfTagConditionalParser */
+    protected $ifTagConditionalParser;
 
     public function __construct(
         CampaignTenantRepositoryInterface $campaignRepo,
-        CssToInlineStyles $cssProcessor
+        CssToInlineStyles $cssProcessor,
+        IfTagConditionalParser $ifTagConditionalParser
     ) {
         $this->campaignRepo = $campaignRepo;
         $this->cssProcessor = $cssProcessor;
+        $this->ifTagConditionalParser = $ifTagConditionalParser;
     }
 
     /**
@@ -100,11 +107,37 @@ class MergeContentService
     {
         $content = $this->compileTags($content);
 
+        // Apply tag-based conditional blocks BEFORE replacing merge tags
+        $content = $this->mergeSubscriberTagConditionals($content, $message);
+
         $content = $this->mergeSubscriberTags($content, $message);
         $content = $this->mergeUnsubscribeLink($content, $message);
         $content = $this->mergeWebviewLink($content, $message);
 
         return $content;
+    }
+    
+    protected function mergeSubscriberTagConditionals(string $content, Message $message): string
+    {
+        $subscriberTags = $this->getSubscriberTagNames($message);
+    
+        return $this->ifTagConditionalParser->parse($content, $subscriberTags);
+    }
+    
+    protected function getSubscriberTagNames(Message $message): array
+    {
+        $subscriber = $message->subscriber;
+    
+        if (! $subscriber) {
+            return [];
+        }
+    
+        $subscriber->loadMissing('tags');
+    
+        return $subscriber->tags
+            ->pluck('name')
+            ->map(fn (string $tag) => mb_strtolower(trim($tag), 'UTF-8'))
+            ->all();
     }
 
     protected function compileTags(string $content): string
